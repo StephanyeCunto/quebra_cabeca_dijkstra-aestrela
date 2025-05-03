@@ -64,16 +64,21 @@ export class Puzzle{
     }
 
     newBoard(newZero){
-
         const possibleFrame= [];
         let zero = this.positionZero();
 
         for(let i=0; i<newZero.length; i++){
             for(let j=0; j< newZero[i].length;j++){
-                let createFrame = this.puzzle.map(row => row.slice());
-                const aux = createFrame[this.positionZero()[1]][newZero[i][j]];
-                createFrame[this.positionZero()[0]][newZero[i][j]]=0;
-                createFrame[zero[0]][zero[1]]=aux;
+                    let createFrame = this.puzzle.map(row => row.slice());
+                    let aux;
+                    if(i==0){
+                        aux = createFrame[newZero[i][j]][this.positionZero()[i]];
+                        createFrame[newZero[i][j]][this.positionZero()[i]]=0;
+                    }else{
+                        aux = createFrame[this.positionZero()[i]][newZero[i][j]];
+                        createFrame[this.positionZero()[i]][newZero[i][j]]=0;
+                    }
+                createFrame[zero[j]][zero[i]]=aux;
                 possibleFrame.push(createFrame);
             }
         }
@@ -82,29 +87,8 @@ export class Puzzle{
             console.log(`\nFrame ${index + 1}:\n`);
             console.log(frame.map(row => row.join(' ')).join('\n'));
         });
-        
-        //for(const i=0; i<this.newZero.length; i++){
-      /*  console.log(this.puzzle.map(row=>row.join(' ')).join('\n'));
-            const aux = this.puzzle[newZero[0][0]][zero[1]];
-            this.puzzle[newZero[0][0]][zero[1]]=0;
-            this.puzzle[zero[0]][zero[1]]=aux;
-        console.log();
-        console.log(this.puzzle.map(row=> row.join(' ')).join('\n'));
-        //}
 
-       /* for(let i=0; i<this.puzzle.length; i++){
-            for(let j=0; j<this.puzzle[i].length; j++){
-                if(this.puzzle[i][j]===0){
-                    console.log(newZero[0][0]);
-                    console.log(this.puzzle.map(row => row.join(' ')).join('\n'));
-                    let aux= this.puzzle[newZero[0][0]][j];
-                    this.puzzle[newZero[0][0]][j]=0;
-                    this.puzzle[i][j]=aux;
-                    console.log();
-                    console.log(this.puzzle.map(row => row.join(' ')).join('\n'));
-                }
-            }
-        }*/
+        return possibleFrame;
     }
 
     checkPosition(number){
