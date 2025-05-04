@@ -1,5 +1,16 @@
 import {Puzzle} from './Puzzle.js';
+import { AEstrela } from './AEstrela.js';  
 
+const puzzleProblem = [
+    [1, 2, 3],
+    [4, 0, 6],
+    [7, 5, 8]
+];
+
+const puzzle = new Puzzle(puzzleProblem);
+
+new AEstrela(puzzle);
+/*
 class QuebraCabecaSolucao {
     constructor(quebraCabeca) {
         this.quebraCabeca = quebraCabeca;
@@ -11,6 +22,7 @@ class QuebraCabecaSolucao {
         this.posicaoInicial = this.posicaoZero(this.quebraCabeca);
         this.puzzle = new Puzzle(this.quebraCabeca);
         this.puzzle.printPuzzle();
+        this.aEstrela = new AEstrela(this.puzzle);
     }
 
     posicaoZero(quebraCabeca) {
@@ -167,9 +179,9 @@ class PriorityQueue {
 }
 
 const quebraCabeca = [
-    [1, 2, 3],
-    [4, 0, 5],
-    [7, 8, 6]
+    [1, 3, 5],
+    [4, 0, 6],
+    [7, 2, 8]
 ];
 
 const solucao = new QuebraCabecaSolucao(quebraCabeca);
