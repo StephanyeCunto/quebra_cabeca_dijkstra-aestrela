@@ -3,8 +3,8 @@ import { AEstrela } from './AEstrela.js';
 
 const puzzleProblem = [
     [1, 2, 3],
-    [4, 0, 6],
-    [7, 5, 8]
+    [4, 6, 5],
+    [7, 0, 8]
 ];
 
 const puzzle = new Puzzle(puzzleProblem);

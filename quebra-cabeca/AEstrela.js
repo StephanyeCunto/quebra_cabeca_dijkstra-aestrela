@@ -1,70 +1,89 @@
 export class AEstrela {
     constructor(puzzle) {
-        this.puzzleObject = puzzle;
-        this.puzzle = puzzle.getPuzzle();
-        this.moviments = puzzle.getMoviments();
-        this.solution = puzzle.getSolution();
-        this.possibleBoard = puzzle.getPossibleBoard(this.puzzle);
+        this.puzzle = puzzle;
+        this.quebraCabeca = puzzle.getQuebraCabeca();
+        this.movimentos = puzzle.getMovimentos();
+        this.solucao = puzzle.getSolucao();
 
-        this.heuristcPossibleBoard;
-        this.heuristcPossibleBoard = new Map();
+        this.heuristicaTabuleiros = new Map();
+        this.solucoes = new Map();
 
-        this.solutions;
-        this.solutions = new Map();
+        this.selecionarCaminho(puzzle);
 
-        for(let i=0; i<this.possibleBoard.length; i++){
-            const board = this.possibleBoard[i];
-            const heuristic=this.getHeuristic(board);
-            this.heuristcPossibleBoard.set(board,heuristic);  
-            if(this.isSolved(board)) this.addSolver(board,heuristic);
+        
+
+     //   console.log(this.heuristicaTabuleiros);
+     /*   for (let i = 0; i < this.tabuleirosPossiveis.length; i++) {
+            const tabuleiro = this.tabuleirosPossiveis[i];
+            const heuristica = this.calcularHeuristica(tabuleiro);
+            this.heuristicaTabuleiros.set(tabuleiro, heuristica);
+            if (this.estaResolvido(tabuleiro)) this.adicionarSolucao(tabuleiro, heuristica);
         }
-
-       this.generatePath();
+*/
+     //   this.gerarCaminho();
     }
 
-    generatePath(){
-        const minorCharge = this.minorCharge(); 
-        const minorChargeValue = minorCharge[0]; 
-        const minorChargeBoard = minorCharge[1];
-        console.log("minorChargeValue: ",minorChargeValue," minorChargeBoard: ",minorChargeBoard);   
+    selecionarCaminho(puzzle){
+        console.log(puzzle)
 
-        const possibleBoard = this.puzzleObject.getPossibleBoard(minorChargeBoard);
-        for(let i=0;i<possibleBoard.length; i++){
-            this.heuristcPossibleBoard.set(possibleBoard[i], (this.getHeuristic(possibleBoard[i])+minorChargeValue));
+    this.tabuleirosPossiveis = puzzle.getTabuleirosPossiveis(puzzle.getQuebraCabeca());
+        console.log("Tabuleiros possiveis agr: "+ this.tabuleirosPossiveis)
+        let menorCusto = Number.MAX_VALUE;
+        for(let tabuleiro of this.tabuleirosPossiveis){
+            const heuristica = this.calcularHeuristica(tabuleiro);
+            this.imprimirTabuleiro(tabuleiro)
+            console.log("Heuristica: "+ heuristica)
+            this.heuristicaTabuleiros.set(tabuleiro, heuristica);
+            //if (this.estaResolvido(tabuleiro)) this.adicionarSolucao(tabuleiro, heuristica);
+            if (this.estaResolvido(tabuleiro)) {
+                this.adicionarSolucao(tabuleiro, heuristica);
+                return; 
         }
+          if (heuristica < menorCusto) {
+    menorCusto = heuristica;
+    const copia = tabuleiro.map(linha => [...linha]);
+    puzzle.setQuebraCabeca(copia);
+    this.quebraCabeca = copia; // <--- mantém em sincronia
+}
 
-        console.log(this.heuristcPossibleBoard);
+        }
+        console.log(menorCusto);
+        puzzle.setMovimentos(puzzle.getMovimentos()+1);
+        console.log(puzzle)
+       this.selecionarCaminho(puzzle);
     }
 
-    minorCharge(){
-        let minorCharge = Infinity;
-        let minorChargeBoard ;
-        this.heuristcPossibleBoard.forEach((value,key)=>{
-            if(value < minorCharge){
-                minorCharge = value;
-                minorChargeBoard = key;
+    imprimirTabuleiro(tabuleiro) {
+    const tamanho = tabuleiro.length;
+    const larguraCelula = tabuleiro[0].length; 
+    const linhaHorizontal = "+" + ("-".repeat(larguraCelula) + "+").repeat(tamanho);
+    console.log(linhaHorizontal);
+
+        for (let i = 0; i < tamanho; i++) {
+            let linha = "|";
+            for (let j = 0; j < tamanho; j++) {
+                let valor = tabuleiro[i][j] === 0 ? " " : tabuleiro[i][j].toString();
+                linha += valor.padStart(larguraCelula, " ") + "|";
             }
-        })
-
-        return [minorCharge,minorChargeBoard];
-    }
-
-    getHeuristic(puzzle){
-        let distance = 0;
-        for(let i=0; i<puzzle.length; i++){
-            for(let j=0; j<puzzle[i].length; j++){
-                let value = puzzle[i][j];
-                distance+=Math.abs(this.solution.get(value).x - i) + Math.abs(this.solution.get(value).y - j);
-            }
+            console.log(linha);
+            console.log(linhaHorizontal);
         }
-        return distance;
     }
 
-    isSolved(puzzle){
-        for(let i=0; i<puzzle.length;i++){
-            for(let j=0; j< puzzle[i].length; j++){
-                const puzzleCheck = puzzle[i][j];                
-                if(this.solution.get(puzzleCheck).x != i || this.solution.get(puzzleCheck).y != j){
+    calcularHeuristica(tabuleiro) {
+        let distancia = 0;
+        for (let i = 0; i < tabuleiro.length; i++) for (let j = 0; j < tabuleiro[i].length; j++) {
+            let valor = tabuleiro[i][j];
+            distancia += Math.abs(this.solucao.get(valor).x - i) + Math.abs(this.solucao.get(valor).y - j);
+        }
+        return distancia;
+    }
+
+       estaResolvido(tabuleiro) {
+        for (let i = 0; i < tabuleiro.length; i++) {
+            for (let j = 0; j < tabuleiro[i].length; j++) {
+                const valor = tabuleiro[i][j];
+                if (this.solucao.get(valor).x !== i || this.solucao.get(valor).y !== j) {
                     return false;
                 }
             }
@@ -72,12 +91,74 @@ export class AEstrela {
         return true;
     }
 
-    addSolver(board,heuristic){
-        this.solutions.set(board,heuristic);
-        this.heuristcPossibleBoard.delete(board);
+    adicionarSolucao(tabuleiro, heuristica) {
+        this.solucoes.set(tabuleiro, heuristica);
+        this.heuristicaTabuleiros.delete(tabuleiro);
+    }
+}
+
+   /* gerarCaminho() {
+        const menorCusto = this.encontrarMenorCusto();
+        const valorMenorCusto = menorCusto[0];
+        const tabuleiroMenorCusto = menorCusto[1];
+
+       console.log("Menor Custo:", valorMenorCusto, " Tabuleiro:");
+        console.log(tabuleiroMenorCusto.map(linha => linha.join(' ')).join('\n'));
+
+        const novosTabuleiros = this.objetoPuzzle.getTabuleirosPossiveis(tabuleiroMenorCusto);
+        for (let i = 0; i < novosTabuleiros.length; i++) {
+            const heuristicaTotal = this.calcularHeuristica(novosTabuleiros[i]) + valorMenorCusto;
+            this.heuristicaTabuleiros.set(novosTabuleiros[i], heuristicaTotal);
+        }
+
+        this.heuristicaTabuleiros.forEach((valor, tabuleiro) => {
+            console.log("Heurística:", valor);
+            console.log("Tabuleiro:");
+            console.log(tabuleiro.map(linha => linha.join(' ')).join('\n'));
+            console.log('------------------------');
+        });
     }
 
-}
+    encontrarMenorCusto() {
+        let menorCusto = Infinity;
+        let tabuleiroMenorCusto;
+        this.heuristicaTabuleiros.forEach((valor, tabuleiro) => {
+            if (valor < menorCusto) {
+                menorCusto = valor;
+                tabuleiroMenorCusto = tabuleiro;
+            }
+        });
+        return [menorCusto, tabuleiroMenorCusto];
+    }
+
+    calcularHeuristica(tabuleiro) {
+        let distancia = 0;
+        for (let i = 0; i < tabuleiro.length; i++) {
+            for (let j = 0; j < tabuleiro[i].length; j++) {
+                let valor = tabuleiro[i][j];
+                distancia += Math.abs(this.solucao.get(valor).x - i) + Math.abs(this.solucao.get(valor).y - j);
+            }
+        }
+        return distancia;
+    }
+
+    estaResolvido(tabuleiro) {
+        for (let i = 0; i < tabuleiro.length; i++) {
+            for (let j = 0; j < tabuleiro[i].length; j++) {
+                const valor = tabuleiro[i][j];
+                if (this.solucao.get(valor).x !== i || this.solucao.get(valor).y !== j) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    adicionarSolucao(tabuleiro, heuristica) {
+        this.solucoes.set(tabuleiro, heuristica);
+        this.heuristicaTabuleiros.delete(tabuleiro);
+    }
+}*/
     
     /*
     aEstrela(puzzle) {
