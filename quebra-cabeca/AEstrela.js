@@ -7,67 +7,46 @@ export class AEstrela {
 
         this.heuristicaTabuleiros = new Map();
         this.solucoes = new Map();
+        this.visitado = new Map();
 
         this.selecionarCaminho(puzzle);
-
-        
-
-     //   console.log(this.heuristicaTabuleiros);
-     /*   for (let i = 0; i < this.tabuleirosPossiveis.length; i++) {
-            const tabuleiro = this.tabuleirosPossiveis[i];
-            const heuristica = this.calcularHeuristica(tabuleiro);
-            this.heuristicaTabuleiros.set(tabuleiro, heuristica);
-            if (this.estaResolvido(tabuleiro)) this.adicionarSolucao(tabuleiro, heuristica);
-        }
-*/
-     //   this.gerarCaminho();
     }
 
     selecionarCaminho(puzzle){
-        console.log(puzzle)
+        this.tabuleirosPossiveis = puzzle.getTabuleirosPossiveis(puzzle.getQuebraCabeca());
 
-    this.tabuleirosPossiveis = puzzle.getTabuleirosPossiveis(puzzle.getQuebraCabeca());
-        console.log("Tabuleiros possiveis agr: "+ this.tabuleirosPossiveis)
-        let menorCusto = Number.MAX_VALUE;
-        for(let tabuleiro of this.tabuleirosPossiveis){
-            const heuristica = this.calcularHeuristica(tabuleiro);
-            this.imprimirTabuleiro(tabuleiro)
-            console.log("Heuristica: "+ heuristica)
-            this.heuristicaTabuleiros.set(tabuleiro, heuristica);
-            //if (this.estaResolvido(tabuleiro)) this.adicionarSolucao(tabuleiro, heuristica);
-            if (this.estaResolvido(tabuleiro)) {
-                this.adicionarSolucao(tabuleiro, heuristica);
-                return; 
-        }
-          if (heuristica < menorCusto) {
-    menorCusto = heuristica;
-    const copia = tabuleiro.map(linha => [...linha]);
-    puzzle.setQuebraCabeca(copia);
-    this.quebraCabeca = copia; // <--- mantém em sincronia
-}
+        let menorCusto = null; 
 
-        }
-        console.log(menorCusto);
-        puzzle.setMovimentos(puzzle.getMovimentos()+1);
-        console.log(puzzle)
-       this.selecionarCaminho(puzzle);
-    }
+        for (let tabuleiro of this.tabuleirosPossiveis) {
+            if(!this.visitado.has(JSON.stringify(tabuleiro))){
+                const heuristica = this.calcularHeuristica(tabuleiro);
+               // this.imprimirTabuleiro(tabuleiro);
+              //  console.log("Heuristica: " + heuristica);
+                this.heuristicaTabuleiros.set(JSON.stringify(tabuleiro), heuristica + this.movimentos);
 
-    imprimirTabuleiro(tabuleiro) {
-    const tamanho = tabuleiro.length;
-    const larguraCelula = tabuleiro[0].length; 
-    const linhaHorizontal = "+" + ("-".repeat(larguraCelula) + "+").repeat(tamanho);
-    console.log(linhaHorizontal);
-
-        for (let i = 0; i < tamanho; i++) {
-            let linha = "|";
-            for (let j = 0; j < tamanho; j++) {
-                let valor = tabuleiro[i][j] === 0 ? " " : tabuleiro[i][j].toString();
-                linha += valor.padStart(larguraCelula, " ") + "|";
+                if (!menorCusto || heuristica + this.movimentos < menorCusto.custo) menorCusto = { tabuleiro, custo: heuristica + this.movimentos };
+            }else{
+                const heuristica = this.calcularHeuristica(tabuleiro);
+                if(this.visitado.get(JSON.stringify(tabuleiro)) > heuristica + this.movimentos){
+                    this.visitado.delete(JSON.stringify(tabuleiro));
+                    if (!menorCusto || heuristica + this.movimentos < menorCusto.custo) menorCusto = { tabuleiro, custo: heuristica + this.movimentos };
+                }
             }
-            console.log(linha);
-            console.log(linhaHorizontal);
         }
+
+        if (!menorCusto) return;
+
+
+        if (this.estaResolvido(menorCusto.tabuleiro)) {
+            this.adicionarSolucao(menorCusto.tabuleiro);
+            console.log("resolvido");
+            return;
+        }
+
+        puzzle.setQuebraCabeca(menorCusto.tabuleiro);
+        this.visitado.set(JSON.stringify(menorCusto.tabuleiro),menorCusto.custo);
+        this.movimentos++;
+        this.selecionarCaminho(puzzle);
     }
 
     calcularHeuristica(tabuleiro) {
@@ -79,7 +58,7 @@ export class AEstrela {
         return distancia;
     }
 
-       estaResolvido(tabuleiro) {
+    estaResolvido(tabuleiro) {
         for (let i = 0; i < tabuleiro.length; i++) {
             for (let j = 0; j < tabuleiro[i].length; j++) {
                 const valor = tabuleiro[i][j];
@@ -94,6 +73,23 @@ export class AEstrela {
     adicionarSolucao(tabuleiro, heuristica) {
         this.solucoes.set(tabuleiro, heuristica);
         this.heuristicaTabuleiros.delete(tabuleiro);
+    }
+
+    imprimirTabuleiro(tabuleiro) {
+        const tamanho = tabuleiro.length;
+        const larguraCelula = tabuleiro[0].length; 
+        const linhaHorizontal = "+" + ("-".repeat(larguraCelula) + "+").repeat(tamanho);
+        console.log(linhaHorizontal);
+
+        for (let i = 0; i < tamanho; i++) {
+            let linha = "|";
+            for (let j = 0; j < tamanho; j++) {
+                let valor = tabuleiro[i][j] === 0 ? " " : tabuleiro[i][j].toString();
+                linha += valor.padStart(larguraCelula, " ") + "|";
+            }
+            console.log(linha);
+            console.log(linhaHorizontal);
+        }
     }
 }
 
