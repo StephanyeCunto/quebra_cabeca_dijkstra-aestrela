@@ -1,130 +1,60 @@
 export class AEstrela {
     constructor(puzzle) {
-        this.puzzle = puzzle;
+        this.puzzle =puzzle;
         this.quebraCabeca = puzzle.getQuebraCabeca();
-        this.movimentos = puzzle.getMovimentos();
+        this.movimentos = 0; 
         this.solucao = puzzle.getSolucao();
 
         this.heuristicaTabuleiros = new Map();
         this.solucoes = new Map();
         this.visitado = new Map();
 
-        this.selecionarCaminho(puzzle);
+        this.selecionarCaminho();
     }
 
-    selecionarCaminho(puzzle){
-        this.tabuleirosPossiveis = puzzle.getTabuleirosPossiveis(puzzle.getQuebraCabeca());
-
-        let menorCusto = null; 
-
-        for (let tabuleiro of this.tabuleirosPossiveis) {
-            if(!this.visitado.has(JSON.stringify(tabuleiro))){
-                const heuristica = this.calcularHeuristica(tabuleiro);
-               // this.imprimirTabuleiro(tabuleiro);
-              //  console.log("Heuristica: " + heuristica);
-                this.heuristicaTabuleiros.set(JSON.stringify(tabuleiro), heuristica + this.movimentos);
-
-                if (!menorCusto || heuristica + this.movimentos < menorCusto.custo) menorCusto = { tabuleiro, custo: heuristica + this.movimentos };
-            }else{
-                const heuristica = this.calcularHeuristica(tabuleiro);
-                if(this.visitado.get(JSON.stringify(tabuleiro)) > heuristica + this.movimentos){
-                    this.visitado.delete(JSON.stringify(tabuleiro));
-                    if (!menorCusto || heuristica + this.movimentos < menorCusto.custo) menorCusto = { tabuleiro, custo: heuristica + this.movimentos };
-                }
+    selecionarCaminho() {
+        const filaAberta = this.iniciarFila();
+        
+        while (!filaAberta.isEmpty()) {
+            const estadoAtual = filaAberta.dequeue();
+            const tabuleiroStr = JSON.stringify(estadoAtual.tabuleiro);
+            
+            if (this.visitado.has(tabuleiroStr) && this.visitado.get(tabuleiroStr) <= estadoAtual.movimentos) continue;
+            this.visitado.set(tabuleiroStr, estadoAtual.movimentos);
+            
+            console.log({ tabuleiro: estadoAtual.tabuleiro, custo: estadoAtual.custoF, movimentos: estadoAtual.movimentos });
+            
+            if (this.puzzle.estaResolvido(estadoAtual.tabuleiro)) {
+                console.log("Solução encontrada em", estadoAtual.movimentos, "movimentos");
+                return;
+            }
+            
+            this.puzzle.setQuebraCabeca(estadoAtual.tabuleiro);
+            const tabuleirosPossiveis =this.puzzle.getTabuleirosPossiveis(estadoAtual.tabuleiro);
+            
+            for (let tabuleiro of tabuleirosPossiveis) {
+                const tabuleiroStr = JSON.stringify(tabuleiro);
+                const novosMovimentos = estadoAtual.movimentos + 1;
+                
+                if (!this.visitado.has(tabuleiroStr) || this.visitado.get(tabuleiroStr) > novosMovimentos)  this.gerarNovoEstado(filaAberta, tabuleiro, novosMovimentos);
             }
         }
-
-        if (!menorCusto) return;
-
-
-        if (this.estaResolvido(menorCusto.tabuleiro)) {
-            this.adicionarSolucao(menorCusto.tabuleiro);
-            console.log("resolvido");
-            return;
-        }
-
-        puzzle.setQuebraCabeca(menorCusto.tabuleiro);
-        this.visitado.set(JSON.stringify(menorCusto.tabuleiro),menorCusto.custo);
-        this.movimentos++;
-        this.selecionarCaminho(puzzle);
+        
+        console.log("Sem solução encontrada");
     }
 
-    calcularHeuristica(tabuleiro) {
-        let distancia = 0;
-        for (let i = 0; i < tabuleiro.length; i++) for (let j = 0; j < tabuleiro[i].length; j++) {
-            let valor = tabuleiro[i][j];
-            distancia += Math.abs(this.solucao.get(valor).x - i) + Math.abs(this.solucao.get(valor).y - j);
-        }
-        return distancia;
+    gerarNovoEstado(filaAberta, tabuleiro, novosMovimentos){
+        const heuristica = this.calcularHeuristica(tabuleiro);
+        const custoF = novosMovimentos + heuristica;        
+        const novoEstado = { tabuleiro: tabuleiro, movimentos: novosMovimentos, custoF: custoF };        
+        filaAberta.enqueue(novoEstado, custoF);
     }
 
-    estaResolvido(tabuleiro) {
-        for (let i = 0; i < tabuleiro.length; i++) {
-            for (let j = 0; j < tabuleiro[i].length; j++) {
-                const valor = tabuleiro[i][j];
-                if (this.solucao.get(valor).x !== i || this.solucao.get(valor).y !== j) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    adicionarSolucao(tabuleiro, heuristica) {
-        this.solucoes.set(tabuleiro, heuristica);
-        this.heuristicaTabuleiros.delete(tabuleiro);
-    }
-
-    imprimirTabuleiro(tabuleiro) {
-        const tamanho = tabuleiro.length;
-        const larguraCelula = tabuleiro[0].length; 
-        const linhaHorizontal = "+" + ("-".repeat(larguraCelula) + "+").repeat(tamanho);
-        console.log(linhaHorizontal);
-
-        for (let i = 0; i < tamanho; i++) {
-            let linha = "|";
-            for (let j = 0; j < tamanho; j++) {
-                let valor = tabuleiro[i][j] === 0 ? " " : tabuleiro[i][j].toString();
-                linha += valor.padStart(larguraCelula, " ") + "|";
-            }
-            console.log(linha);
-            console.log(linhaHorizontal);
-        }
-    }
-}
-
-   /* gerarCaminho() {
-        const menorCusto = this.encontrarMenorCusto();
-        const valorMenorCusto = menorCusto[0];
-        const tabuleiroMenorCusto = menorCusto[1];
-
-       console.log("Menor Custo:", valorMenorCusto, " Tabuleiro:");
-        console.log(tabuleiroMenorCusto.map(linha => linha.join(' ')).join('\n'));
-
-        const novosTabuleiros = this.objetoPuzzle.getTabuleirosPossiveis(tabuleiroMenorCusto);
-        for (let i = 0; i < novosTabuleiros.length; i++) {
-            const heuristicaTotal = this.calcularHeuristica(novosTabuleiros[i]) + valorMenorCusto;
-            this.heuristicaTabuleiros.set(novosTabuleiros[i], heuristicaTotal);
-        }
-
-        this.heuristicaTabuleiros.forEach((valor, tabuleiro) => {
-            console.log("Heurística:", valor);
-            console.log("Tabuleiro:");
-            console.log(tabuleiro.map(linha => linha.join(' ')).join('\n'));
-            console.log('------------------------');
-        });
-    }
-
-    encontrarMenorCusto() {
-        let menorCusto = Infinity;
-        let tabuleiroMenorCusto;
-        this.heuristicaTabuleiros.forEach((valor, tabuleiro) => {
-            if (valor < menorCusto) {
-                menorCusto = valor;
-                tabuleiroMenorCusto = tabuleiro;
-            }
-        });
-        return [menorCusto, tabuleiroMenorCusto];
+    iniciarFila(){
+        const filaAberta = new PriorityQueue();
+        const estadoInicial = { tabuleiro: this.puzzle.getQuebraCabeca(),movimentos: 0, custoF: this.calcularHeuristica(this.puzzle.getQuebraCabeca())};
+        filaAberta.enqueue(estadoInicial, estadoInicial.custoF);
+        return filaAberta;
     }
 
     calcularHeuristica(tabuleiro) {
@@ -137,112 +67,6 @@ export class AEstrela {
         }
         return distancia;
     }
-
-    estaResolvido(tabuleiro) {
-        for (let i = 0; i < tabuleiro.length; i++) {
-            for (let j = 0; j < tabuleiro[i].length; j++) {
-                const valor = tabuleiro[i][j];
-                if (this.solucao.get(valor).x !== i || this.solucao.get(valor).y !== j) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    adicionarSolucao(tabuleiro, heuristica) {
-        this.solucoes.set(tabuleiro, heuristica);
-        this.heuristicaTabuleiros.delete(tabuleiro);
-    }
-}*/
-    
-    /*
-    aEstrela(puzzle) {
-        const startState = this.createPuzzle(puzzle.getPuzzle());
-        const visited = new Set();
-        const pq = new PriorityQueue();
-
-        pq.enqueue(puzzle.getPuzzle(), this.getHeuristic(puzzle.getPuzzle()));
-        visited.add(startState.id);
-
-        while (!pq.isEmpty()) {
-            const current = pq.dequeue();
-
-            if (this.isSolved(current.quebraCabeca)) {
-                console.log(`✅ Solução encontrada em ${current.movimentos} movimentos.\n`);
-                this.printSolution(current.caminho);
-                return current.movimentos;
-            }
-
-            this.getProximoEstado(current).forEach(nextState => {
-                if (!visited.has(nextState.id)) {
-                    visited.add(nextState.id);
-                    const priority = nextState.movimentos + this.getHeuristic(nextState.quebraCabeca);
-                    pq.enqueue(nextState, priority);
-                }
-            });
-        }
-
-        console.log("❌ Nenhuma solução encontrada.");
-        return -1;
-    }
-
-    createPuzzle(board, movimentos = 0, caminho = []) {
-        const id = board.flat().join('');
-        return {
-            quebraCabeca: board,
-            id,
-            movimentos,
-            caminho: [...caminho, board]
-        };
-    }
-
-    isSolved(board) {
-        const goal = [
-            [1, 2, 3],
-            [4, 5, 6],
-            [7, 8, 0]
-        ];
-        return board.flat().join('') === goal.flat().join('');
-    }
-
-    getProximoEstado(state) {
-        const puzzle = new Puzzle(state.quebraCabeca); // Usa sua classe Puzzle
-        const estados = [];
-
-        puzzle.possibleBoard.forEach(board => {
-            const newState = this.createPuzzle(board, state.movimentos + 1, state.caminho);
-            estados.push(newState);
-        });
-
-        return estados;
-    }
-
-    getHeuristic(board) {
-        let distance = 0;
-        const goalPositions = {
-            1: [0, 0], 2: [0, 1], 3: [0, 2],
-            4: [1, 0], 5: [1, 1], 6: [1, 2],
-            7: [2, 0], 8: [2, 1], 0: [2, 2]
-        };
-
-        for (let i = 0; i < 3; i++) {
-            for (let j = 0; j < 3; j++) {
-                const value = board[i][j];
-                const [goalX, goalY] = goalPositions[value];
-                distance += Math.abs(i - goalX) + Math.abs(j - goalY);
-            }
-        }
-        return distance;
-    }
-
-    printSolution(caminho) {
-        caminho.forEach((step, index) => {
-            console.log(`Passo ${index}:`);
-            console.log(step.map(row => row.join(' ')).join('\n'));
-            console.log('\n');
-        });
-    }
 }
 
 class PriorityQueue {
@@ -250,16 +74,16 @@ class PriorityQueue {
         this.queue = [];
     }
 
-    enqueue(puzzle, priority) {
-        this.queue.push({ puzzle, priority });
+    enqueue(item, priority) {
+        this.queue.push({ item, priority });
         this.queue.sort((a, b) => a.priority - b.priority);
     }
 
     dequeue() {
-        return this.queue.shift().puzzle;
+        return this.queue.shift().item;
     }
 
     isEmpty() {
         return this.queue.length === 0;
     }
- } */
+}

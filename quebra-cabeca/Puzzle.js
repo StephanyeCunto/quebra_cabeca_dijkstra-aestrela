@@ -51,6 +51,18 @@ export class Puzzle {
         return numero >= 0 && numero < this.puzzle.length;
     }
 
+    estaResolvido(tabuleiro) {
+        for (let i = 0; i < tabuleiro.length; i++) {
+            for (let j = 0; j < tabuleiro[i].length; j++) {
+                const valor = tabuleiro[i][j];
+                if (this.solucao.get(valor).x !== i || this.solucao.get(valor).y !== j) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     imprimirQuebraCabeca() {
       //  console.log("Solução:");
        // console.log(this.solucao);
